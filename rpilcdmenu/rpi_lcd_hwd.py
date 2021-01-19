@@ -1,4 +1,5 @@
 from time import sleep
+import i2c_lcd
 
 
 class RpiLCDHwd:
@@ -45,31 +46,8 @@ class RpiLCDHwd:
     LCD_5x10DOTS = 0x04
     LCD_5x8DOTS = 0x00
 
-    def __init__(self, pin_rs=26, pin_e=19, pins_db=[13, 6, 5, 21], GPIO=None):
-        """
-        LCD GPIO configuration
-        """
-        if not GPIO:
-            import RPi.GPIO as GPIO
-            GPIO.setwarnings(False)
-
-        self.GPIO = GPIO
-        self.pin_rs = pin_rs
-        self.pin_e = pin_e
-        self.pins_db = pins_db
-
-        self.displaycontrol = None
-        self.displayfunction = None
-        self.displaymode = None
-
-        self.GPIO.setmode(GPIO.BCM)
-        self.GPIO.setup(self.pin_rs, GPIO.OUT)
-        self.GPIO.setup(self.pin_e, GPIO.OUT)
-
-        for pin in self.pins_db:
-            self.GPIO.setup(pin, GPIO.OUT)
-
-        self.display_toggle = 'on'
+    def __init__(self):
+        self.lcd = i2c_lcd.lcd()
 
     def initDisplay(self):
         self.write4bits(0x33)  # initialization
@@ -90,28 +68,7 @@ class RpiLCDHwd:
         return self
 
     def write4bits(self, bits, char_mode=False):
-        """ Send command to LCD """
-        self.delayMicroseconds(1500)  # 1000 microsecond sleep
-        bits = bin(bits)[2:].zfill(8)
-        self.GPIO.output(self.pin_rs, char_mode)
-        for pin in self.pins_db:
-            self.GPIO.output(pin, False)
-
-        for i in range(4):
-            if bits[i] == "1":
-                self.GPIO.output(self.pins_db[::-1][i], True)
-
-        self.pulseEnable()
-
-        for pin in self.pins_db:
-            self.GPIO.output(pin, False)
-
-        for i in range(4, 8):
-            if bits[i] == "1":
-                self.GPIO.output(self.pins_db[::-1][i - 4], True)
-
-        self.pulseEnable()
-
+        self.lcd.lcd_write(bits, int(char_mode))
         return self
 
     def delayMicroseconds(self, microseconds):

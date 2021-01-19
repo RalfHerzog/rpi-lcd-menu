@@ -7,17 +7,12 @@ from rpilcdmenu.rpi_lcd_hwd import RpiLCDHwd
 
 
 class RpiLCDMenu(BaseMenu):
-    def __init__(self, pin_rs=26, pin_e=19, pins_db=[13, 6, 5, 21], GPIO=None, scrolling_menu=False):
+    def __init__(self, scrolling_menu=False):
         """
         Initialize menu
         """
         self.lcd_queue = queue.Queue(maxsize=0)
         self.scrolling_menu = scrolling_menu
-
-        self.pin_rs = pin_rs
-        self.pin_e = pin_e
-        self.pins_db = pins_db
-        self.GPIO = GPIO
 
         # turn-on the worker thread
         threading.Thread(target=self.lcd_queue_processor).start()
@@ -249,7 +244,7 @@ class RpiLCDMenu(BaseMenu):
 
     def lcd_queue_processor(self):
 
-        self.lcd = RpiLCDHwd(self.pin_rs, self.pin_e, self.pins_db, self.GPIO)
+        self.lcd = RpiLCDHwd()
         self.lcd.initDisplay()
 
         # clear it once in case of existing corruption
