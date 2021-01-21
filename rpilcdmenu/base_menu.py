@@ -27,10 +27,10 @@ class BaseMenu(object):
         """
         for item in self.items:
             if hasattr(item, 'submenu') and isinstance(item.submenu, BaseMenu):
-                print("|" + "--" * (level + 1) + "[" + "%s" % (item.__str__()) + "]")
+                print(("|" + "--" * (level + 1) + "[" + "%s" % (item.__str__()) + "]"))
                 item.submenu.debug(level+1)
             else:
-                print("|" + "--" * level + ">" + "%s" % (item.__str__()))
+                print(("|" + "--" * level + ">" + "%s" % (item.__str__())))
         return self
 
     def append_item(self, item):
@@ -82,7 +82,8 @@ class BaseMenu(object):
         """
         print(self.current_option)
         print(str(self))
-        action_result = self.items[self.current_option].action()
+        item = self.items[self.current_option]
+        action_result = item.action()
         if isinstance(action_result, BaseMenu):
             return action_result
         if hasattr(item, 'submenu') and isinstance(item.submenu, BaseMenu):
