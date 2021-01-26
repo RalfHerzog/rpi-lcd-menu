@@ -46,8 +46,97 @@ class RpiLCDHwd:
     LCD_5x10DOTS = 0x04
     LCD_5x8DOTS = 0x00
 
+    # define custom character
+    FONTDATA = [
+        # char(0) - Solid block
+        [ 0b11111,
+          0b11111,
+          0b11111,
+          0b11111,
+          0b11111,
+          0b11111,
+          0b11111,
+          0b11111 ],
+    ]
+
+    # examples of other custom characters
+    '''
+        # chr(0) - Heart
+        [ 0b00000,
+          0b01010,
+          0b11111,
+          0b11111,
+          0b01110,
+          0b00100,
+          0b00000,
+          0b00000 ],
+        
+        # chr(0) - Bell
+        [ 0b00100,
+          0b01110,
+          0b01110,
+          0b01110,
+          0b11111,
+          0b00000,
+          0b00100,
+          0b00000 ],
+        
+        # chr(0) - Speaker
+        [ 0b00001,
+          0b00011,
+          0b01111,
+          0b01111,
+          0b01111,
+          0b00011,
+          0b00001,
+          0b00000 ],
+       
+        # chr(0) - Music Notes
+        [ 0b00001,
+          0b00011,
+          0b00101,
+          0b01001,
+          0b01001,
+          0b01011,
+          0b11011,
+          0b11000 ],
+        
+        # chr(0) - Padlock
+        [ 0b01110,
+          0b10001,
+          0b10001,
+          0b11111,
+          0b11011,
+          0b11011,
+          0b11111,
+          0b00000 ], 
+
+       # chr(0) - Thermometer
+        [ 0b00100,
+          0b01010,
+          0b01010,
+          0b01110,
+          0b01110,
+          0b11111,
+          0b11111,
+          0b01110 ],
+
+        # chr(0) - Power Plug
+        [ 0b01010,
+          0b01010,
+          0b11111,
+          0b10001,
+          0b10001,
+          0b01110,
+          0b00100,
+          0b00100 ],
+
+    ]
+    '''
+
     def __init__(self):
         self.lcd = i2c_lcd.lcd()
+        self.lcd.lcd_load_custom_chars(self.FONTDATA) # load custom characters
 
     def initDisplay(self):
         self.write4bits(0x33)  # initialization
