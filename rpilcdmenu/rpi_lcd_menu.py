@@ -27,10 +27,11 @@ class RpiLCDMenu(BaseMenu):
         self.event_handler.link(self.exit_loop, 'onInput')
 
     def exit_loop(self, msg=None):
-        for process in all_processes:
-            process.terminate()
-        all_processes.clear()
-        return
+        if self.scrolling_menu:
+            for process in all_processes:
+                process.terminate()
+            all_processes.clear()
+        return self
 
     def write_to_lcd(self, framebuffer):
         for row in framebuffer:
