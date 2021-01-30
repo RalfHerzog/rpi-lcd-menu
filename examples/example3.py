@@ -3,13 +3,12 @@
 """
 multi level menu
 """
-
 from rpilcdmenu import *
 from rpilcdmenu.items import *
 
 
 def main():
-    menu = RpiLCDMenu(26, 19, [13, 6, 5, 21])
+    menu = RpiLCDMenu()
 
     function_item1 = FunctionItem("Item 1", fooFunction, [1])
     function_item2 = FunctionItem("Item 2", fooFunction, [2])

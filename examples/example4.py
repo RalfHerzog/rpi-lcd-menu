@@ -17,7 +17,7 @@ def main():
 	prev_button = 0
 
 	#create menu as in example3
-	menu = RpiLCDMenu(26,19,[13, 6, 5, 21])
+	menu = RpiLCDMenu()
 
 	function_item1 = FunctionItem("Item 1", fooFunction, [1])
 	function_item2 = FunctionItem("Item 2", fooFunction, [2])
