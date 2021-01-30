@@ -1,3 +1,5 @@
+from eventhandler import EventHandler
+
 class BaseMenu(object):
     """
     A generic menu
@@ -10,6 +12,12 @@ class BaseMenu(object):
         self.parent = parent
         self.current_option = 0
         self.selected_option = -1
+
+        self.event_handler = EventHandler('onInput')
+#        self.event_handler.link(self.__on_input, 'onInput')
+
+#    def __on_input(self, msg):
+#        pass
 
     def start(self):
         """
@@ -62,6 +70,7 @@ class BaseMenu(object):
             self.current_option = len(self.items) - 1
         else:
             self.current_option -= 1
+        self.event_handler.fire('onInput', 'Up')
         self.render()
         return self
 
@@ -73,6 +82,7 @@ class BaseMenu(object):
             self.current_option = 0
         else:
             self.current_option += 1
+        self.event_handler.fire('onInput', 'Down')
         self.render()
         return self
 
@@ -80,8 +90,9 @@ class BaseMenu(object):
         """
         User triggered enter event
         """
-        print(self.current_option)
-        print(str(self))
+        self.event_handler.fire('onInput', 'Enter')
+        #print(self.current_option)
+        #print(str(self))
         item = self.items[self.current_option]
         action_result = item.action()
         if isinstance(action_result, BaseMenu):
