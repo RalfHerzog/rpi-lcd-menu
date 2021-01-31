@@ -7,8 +7,6 @@ from RPLCD.codecs import A02Codec as LCDCodec
 
 from rpilcdmenu.base_menu import BaseMenu
 
-all_processes = []
-
 class RpiLCDMenu(BaseMenu):
     def __init__(self, scrolling_menu=False):
         """
@@ -17,63 +15,18 @@ class RpiLCDMenu(BaseMenu):
         self.lcd = CharLCD(i2c_expander='PCF8574', address=0x27, port=1, cols=16, rows=2, dotsize=8, auto_linebreaks=True)
         self.scrolling_menu = scrolling_menu
         self.lcd_queue = queue.Queue(maxsize=0)
+        self.maxWidth = 15
+        self.lcdFrameRate = 0.05
 
-        threading.Thread(target=self.reader_proc).start()
-
-        self.lcd.clear()
+        threading.Thread(target=self.lcd_queue_processor).start()
 
         super(self.__class__, self).__init__()
-
-        self.event_handler.link(self.exit_loop, 'onInput')
-
-    def exit_loop(self, msg=None):
-        if self.scrolling_menu:
-            for process in all_processes:
-                process.terminate()
-            all_processes.clear()
-        return self
 
     def write_to_lcd(self, framebuffer):
         for row in framebuffer:
             self.lcd.write_string(row.ljust(16)[:16])
             self.lcd.write_string('\r\n')
 
-        return self
-
-    def loop_string(self, display_items, row_to_scroll):
-        framebuffer = [
-            display_items[0],
-            display_items[1],
-        ]
-        if len(display_items[int(row_to_scroll)]) > 16:
-            if self.scrolling_menu:
-                framebuffer[int(0 == 0 and "1" or "0")] = display_items[int(0 == 0 and "1" or "0")][:16]
-                s = display_items[row_to_scroll][1:]
-                while True:
-                    for i in range(len(s) - 15 + 1):
-                        framebuffer[row_to_scroll] = '>' + s[i:i+15]
-                        self.write_to_lcd(framebuffer)
-                        print(framebuffer)
-                        print(i)
-                        if i == 0 or i == len(s) - 15:
-                            print('slow')
-                            delay=1.5
-                        else:
-                            print('fast')
-                            delay=0.15
-                        sleep(delay)
-            else:
-                framebuffer = [display_items[0][:16], display_items[1][:16]]
-                self.write_to_lcd(framebuffer)
-                return self
-        else:
-            self.write_to_lcd(framebuffer)
-        return self
-
-    def scroller(self, text):
-        self.lcd.clear()
-        while True:
-            self.loop_string(text, 0)
         return self
 
     def message(self, text, autoscroll=False):
@@ -86,50 +39,91 @@ class RpiLCDMenu(BaseMenu):
         return self
 
     def render(self):
-        """
-        Render menu
-        """
-        self.exit_loop()
-        self.lcd.clear()
-
         if len(self.items) == 0:
-            self.lcd.write_string('Menu is empty')
+            self.message('Menu is empty')
             return self
 
-        if len(self.items) <= 2:
-            display_items = [(self.current_option == 0 and ">" or " ") + self.items[0].text, ""]
+        elif len(self.items) <= 2:
+            text = [self.items[0].text, ""]
             cursor_pos = self.current_option
             if len(self.items) == 2:
-                display_items[1] = (self.current_option == 1 and ">" or " ") + self.items[1].text
+                text[1] = self.items[1].text
 
-        if len(self.items) > 2:
-            display_items = [">" + self.items[self.current_option].text, ""]
+        elif len(self.items) > 2:
+            text = [self.items[self.current_option].text, ""]
             cursor_pos = 0
             if self.current_option + 1 < len(self.items):
-                display_items[1] = " " + self.items[self.current_option + 1].text[:15]
+                text[1] = self.items[self.current_option + 1].text
             else:
-                display_items[1] = " " + self.items[0].text[:15]
+                text[1] = self.items[0].text
 
-        process=[self.loop_string, display_items, cursor_pos]
-        self.lcd_queue_processor(process)
-
+        if self.scrolling_menu:
+            self.lcd_queue.put((self.menu_scroller, text, cursor_pos, self.current_option))
+        else:
+            self.lcd_queue.put((self.menu_static, text, cursor_pos))
         return self
 
-    def lcd_queue_processor(self, process):
-        func = process[0]
-        args = process[1:]
-        clear = mp.Process(target=self.lcd.clear())
-        enqueue = mp.Process(target=func, args=(args))
-        self.lcd_queue.put(clear)
-        self.lcd_queue.put(enqueue)
-        all_processes.append(enqueue)
-
+    def menu_static(self, text, cursor_pos):
+        inactive_row = int(cursor_pos == 0 and "1" or "0")
+        framebuffer = ["",""]
+        framebuffer[cursor_pos] = '>' + text[cursor_pos][:self.maxWidth]
+        framebuffer[inactive_row] = ' ' + text[inactive_row][:self.maxWidth]
+        self.write_to_lcd(framebuffer)
         return self
 
-    def reader_proc(self):
-        print('[2] reader_proc executed...')
+    def menu_scroller(self, text, cursor_pos, inputOption):
+        inactive_row = int(cursor_pos == 0 and "1" or "0")
+
+        print('cursor_pos: ' + str(cursor_pos))
+        print('inactive_row: ' + str(inactive_row))
+        if len(text[cursor_pos]) <= self.maxWidth:
+            # Selected row of the menu fits on line; no need to scroll,
+            # but we're going to truncate the bottom line if it's too long
+            framebuffer = ["",""]
+            framebuffer[cursor_pos] = '>' + text[cursor_pos]
+            framebuffer[inactive_row] = ' ' + text[inactive_row][:self.maxWidth]
+            print(framebuffer)
+            self.write_to_lcd(framebuffer)
+            return self
+
+        # top line too long.. so animate until there's another input event
+        aniPosition = 0
+        print('inputOption is: ' + str(inputOption))
+        print('self.current_option is: ' + str(self.current_option))
+        while inputOption == self.current_option:
+            ### render partial menu text
+            aniText = text[cursor_pos][aniPosition: aniPosition + self.maxWidth]
+            # prepend cursor character in front of top menu item, blank space in front of bottom
+            framebuffer = ["",""]
+            framebuffer[cursor_pos] = '>' + aniText[:self.maxWidth]
+            framebuffer[inactive_row] = ' ' + text[1][:self.maxWidth]
+            # Send the framebuffer to the LCD
+            self.write_to_lcd(framebuffer)
+
+            ### determine next state
+            if aniPosition == 0 or aniPosition == len(text[0]) - self.maxWidth:
+                delayFrames=25
+            else:
+                delayFrames=5
+
+            aniPosition += 1
+            # Restart the animation once the whole row has been scrolled
+            if aniPosition >= (len(text[0]) - self.maxWidth + 1):
+                aniPosition = 0
+
+            for _ in range(delayFrames):
+                sleep(self.lcdFrameRate)
+                if inputOption != self.current_option:
+                    break
+        return self
+
+    def lcd_queue_processor(self):
+        # clear it once in case of existing corruption
+        self.lcd.clear()
+
+        # process the queue
         while True:
-            process = self.lcd_queue.get()
-            process.start()
-            all_processes.append(process)
-            process.join()
+            items = self.lcd_queue.get()
+            func = items[0]
+            args = items[1:]
+            func(*args)
