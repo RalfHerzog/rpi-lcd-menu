@@ -10,5 +10,6 @@ class RpiLCDSubMenu(RpiLCDMenu):
         self.lcd_queue = base_menu.lcd_queue
         self.maxWidth = base_menu.maxWidth
         self.lcdFrameRate = base_menu.lcdFrameRate
+        self.cursor_char = base_menu.cursor_char
 
         super(RpiLCDMenu, self).__init__(base_menu)

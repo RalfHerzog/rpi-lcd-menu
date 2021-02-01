@@ -10,6 +10,7 @@ class BaseMenu(object):
         self.parent = parent
         self.current_option = 0
         self.selected_option = -1
+        self.input_count = 0
 
     def start(self):
         """
@@ -58,6 +59,7 @@ class BaseMenu(object):
         """
         User triggered up event
         """
+        self.input_count += 1
         if self.current_option == 0:
             self.current_option = len(self.items) - 1
         else:
@@ -69,6 +71,7 @@ class BaseMenu(object):
         """
         User triggered down event
         """
+        self.input_count += 1
         if self.current_option == len(self.items) - 1:
             self.current_option = 0
         else:
@@ -80,6 +83,7 @@ class BaseMenu(object):
         """
         User triggered enter event
         """
+        self.input_count += 1
         #print(self.current_option)
         #print(str(self))
         item = self.items[self.current_option]
