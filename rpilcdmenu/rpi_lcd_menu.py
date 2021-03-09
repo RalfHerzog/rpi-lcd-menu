@@ -49,7 +49,7 @@ class RpiLCDMenu(BaseMenu):
         self.lcd.create_char(loc, char)
         return self
 
-    def home_lcd(self):
+    def home_lcd(self, *args):
         """ Reset LCD cursor to starting position. """
         self.lcd.home()
 
@@ -75,7 +75,7 @@ class RpiLCDMenu(BaseMenu):
             self.lcd_queue.put((self.write_to_lcd, text))
         else:
             self.lcd_queue.put((self.lcd.write_string, text))
-            self.lcd_queue.put((self.home_lcd, "None"))
+            self.lcd_queue.put((self.home_lcd, ""))
         return self
 
     def render(self):
