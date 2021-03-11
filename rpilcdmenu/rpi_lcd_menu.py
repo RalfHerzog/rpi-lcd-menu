@@ -53,11 +53,13 @@ class RpiLCDMenu(BaseMenu):
         """ Reset LCD cursor to starting position. """
         self.lcd.home()
 
-    def write_to_lcd(self, framebuffer):
+    def write_to_lcd(self, framebuffer, clear=True):
         """
         Method to write out the formatted framebuffer to the LCD.
         framebuffer: A list whose elements are the strings to be written to the LCD
         """
+        if clear:
+            self.lcd.clear()
         for row in framebuffer:
             self.lcd.write_string(row.ljust(16)[:16])
             self.lcd.write_string("\r\n")
@@ -69,10 +71,8 @@ class RpiLCDMenu(BaseMenu):
         text: String containing the message text to be displayed
         clear: If false, will not clear the display first
         """
-        if clear:
-            self.lcd.clear()
         if isinstance(text, list):
-            self.lcd_queue.put((self.write_to_lcd, text))
+            self.lcd_queue.put((self.write_to_lcd, text, clear))
         else:
             self.lcd_queue.put((self.lcd.write_string, text))
             self.lcd_queue.put((self.home_lcd, ""))
