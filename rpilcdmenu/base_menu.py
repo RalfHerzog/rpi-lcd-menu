@@ -1,7 +1,8 @@
-class BaseMenu(object):
+class BaseMenu:
     """
     A generic menu
     """
+
     def __init__(self, parent=None):
         """
         Initialzie basic menu
@@ -27,9 +28,9 @@ class BaseMenu(object):
         print menu items in console
         """
         for item in self.items:
-            if hasattr(item, 'submenu') and isinstance(item.submenu, BaseMenu):
+            if hasattr(item, "submenu") and isinstance(item.submenu, BaseMenu):
                 print(("|" + "--" * (level + 1) + "[" + "%s" % (item.__str__()) + "]"))
-                item.submenu.debug(level+1)
+                item.submenu.debug(level + 1)
             else:
                 print(("|" + "--" * level + ">" + "%s" % (item.__str__())))
         return self
@@ -47,13 +48,11 @@ class BaseMenu(object):
         """
         Render menu
         """
-        pass
 
     def clearDisplay(self):
         """
         Clear the screen/
         """
-        pass
 
     def processUp(self):
         """
@@ -84,13 +83,32 @@ class BaseMenu(object):
         User triggered enter event
         """
         self.input_count += 1
-        #print(self.current_option)
-        #print(str(self))
         item = self.items[self.current_option]
-        action_result = item.action()
+        return self._fire_action(item, item.action())
+
+    def processAltEnter(self):
+        """
+        Trigger event for second item in a ContainerItem
+        """
+        self.input_count += 1
+        item = self.items[self.current_option]
+        try:
+            type = item.get_classname()
+        except AttributeError:
+            type = None
+
+        if type != "ContainerItem":
+            return self._fire_action(item, item.action())
+
+        return self._fire_action(item, item.alt_action())
+
+    def _fire_action(self, item, action_result):
+        """
+        Method to trigger the action
+        """
         if isinstance(action_result, BaseMenu):
             return action_result
-        if hasattr(item, 'submenu') and isinstance(item.submenu, BaseMenu):
+        if hasattr(item, "submenu") and isinstance(item.submenu, BaseMenu):
             return action_result
         return self
 
@@ -110,4 +128,3 @@ class BaseMenu(object):
         item.menu = self
         self.items.remove(item)
         return self
-
