@@ -11,6 +11,7 @@ class MessageView(RpiLCDSubMenu):
         :ivar bool scrollable: is scrolling allowed
         """
 
+        self.lcd = base_menu.lcd
         self.scrollable = scrollable
         self.line_index = 0
         self.text_lines = 0
@@ -24,7 +25,7 @@ class MessageView(RpiLCDSubMenu):
         """
         Render menu
         """
-        self.clearDisplay()
+        self.lcd.clear()
 
         if self.scrollable:
             self.message(get_scrolled_text(self.text, self.line_index))
