@@ -1,9 +1,6 @@
-import queue
-import threading
 from time import sleep
-from RPLCD.i2c import CharLCD
-from RPLCD.codecs import A02Codec as LCDCodec
 from rpilcdmenu.base_menu import BaseMenu
+import rpilcdmenu.rpi_lcd_hwd as lcd
 
 
 class RpiLCDMenu(BaseMenu):
@@ -18,23 +15,13 @@ class RpiLCDMenu(BaseMenu):
         False to disable this animation and simply truncate the extra
         characters.
         """
-        self.lcd = CharLCD(
-            i2c_expander="PCF8574",
-            address=0x27,
-            port=1,
-            cols=16,
-            rows=2,
-            dotsize=8,
-            auto_linebreaks=True,
-        )
         self.lcd_framerate = 0.05  # Interval to listen for input during menu scrolling
         self.cursor_char = ">"  # Character for menu selector
 
+        self.lcd = lcd.lcd
         self.scrolling_menu = scrolling_menu
-        self.lcd_queue = queue.Queue(maxsize=0)
+        self.lcd_queue = lcd.lcd_queue
         self.max_width = 15
-
-        threading.Thread(target=self._lcd_queue_processor).start()
 
         super().__init__()
 
@@ -49,11 +36,7 @@ class RpiLCDMenu(BaseMenu):
         self.lcd.create_char(loc, char)
         return self
 
-    def home_lcd(self, *args):
-        """ Reset LCD cursor to starting position. """
-        self.lcd.home()
-
-    def write_to_lcd(self, framebuffer, clear=True):
+    def write_to_lcd(self, framebuffer, clear=False):
         """
         Method to write out the formatted framebuffer to the LCD.
         framebuffer: A list whose elements are the strings to be written to the LCD
@@ -72,10 +55,10 @@ class RpiLCDMenu(BaseMenu):
         clear: If false, will not clear the display first
         """
         if isinstance(text, list):
-            self.lcd_queue.put((self.write_to_lcd, text, clear))
+            self.lcd_queue.put([self.write_to_lcd, text, clear])
         else:
-            self.lcd_queue.put((self.lcd.write_string, text))
-            self.lcd_queue.put((self.home_lcd, ""))
+            self.lcd_queue.put([self.lcd.write_string, text])
+            self.lcd_queue.put([self.lcd.home])
         return self
 
     def render(self):
@@ -103,11 +86,9 @@ class RpiLCDMenu(BaseMenu):
                 text[1] = self.items[0].text
 
         if self.scrolling_menu:
-            self.lcd_queue.put(
-                (self._menu_scroller, text, cursor_pos, self.input_count)
-            )
+            self.lcd_queue.put([self._menu_scroller, text, cursor_pos, self.input_count])
         else:
-            self.lcd_queue.put((self._menu_static, text, cursor_pos))
+            self._menu_static(text, cursor_pos)
         return self
 
     def _menu_static(self, text, cursor_pos):
@@ -124,7 +105,7 @@ class RpiLCDMenu(BaseMenu):
         framebuffer[cursor_pos] = self.cursor_char + text[cursor_pos][: self.max_width]
         framebuffer[inactive_row] = " " + text[inactive_row][: self.max_width]
         print(framebuffer)
-        self.write_to_lcd(framebuffer)
+        self.lcd_queue.put([self.write_to_lcd, framebuffer])
         return self
 
     def _menu_scroller(self, text, cursor_pos, start_input_count):
@@ -144,7 +125,7 @@ class RpiLCDMenu(BaseMenu):
             framebuffer[cursor_pos] = self.cursor_char + text[cursor_pos]
             framebuffer[inactive_row] = " " + text[inactive_row][: self.max_width]
             print(framebuffer)
-            self.write_to_lcd(framebuffer)
+            self.lcd_queue.put([self.write_to_lcd, framebuffer])
             return self
 
         # top line too long.. so animate until there's another input event
@@ -174,15 +155,3 @@ class RpiLCDMenu(BaseMenu):
                 if start_input_count != self.input_count:
                     break
         return self
-
-    def _lcd_queue_processor(self):
-        """
-        Process all LCD write commands through a queue to prevent
-        display corruption.
-        """
-        self.lcd.clear()
-        while True:
-            items = self.lcd_queue.get()
-            func = items[0]
-            args = items[1:]
-            func(*args)
