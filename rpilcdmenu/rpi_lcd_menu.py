@@ -72,24 +72,27 @@ class RpiLCDMenu(BaseMenu):
             return self
 
         if len(self.items) <= 2:
-            text = [self.items[0].text, ""]
+            text = [self.items[0].text]
             cursor_pos = self.current_option
             if len(self.items) == 2:
-                text[1] = self.items[1].text
+                text.append(self.items[1].text)
 
         elif len(self.items) > 2:
-            text = [self.items[self.current_option].text, ""]
+            text = [self.items[self.current_option].text]
             cursor_pos = 0
             if self.current_option + 1 < len(self.items):
-                text[1] = self.items[self.current_option + 1].text
+                text.append(self.items[self.current_option + 1].text)
             else:
-                text[1] = self.items[0].text
+                text.append(self.items[0].text)
+
+        if len(text[cursor_pos]) <= self.max_width:
+            return self._menu_static(text, cursor_pos)
 
         if self.scrolling_menu:
             self.lcd_queue.put([self._menu_scroller, text, cursor_pos, self.input_count])
-        else:
-            self._menu_static(text, cursor_pos)
-        return self
+            return self
+
+        return self._menu_static(text, cursor_pos)
 
     def _menu_static(self, text, cursor_pos):
         """
@@ -118,16 +121,6 @@ class RpiLCDMenu(BaseMenu):
         print("SCROLLING DISPLAY")
         print("cursor_pos: " + str(cursor_pos))
         print("inactive_row: " + str(inactive_row))
-        if len(text[cursor_pos]) <= self.max_width:
-            # Selected row of the menu fits on line; no need to scroll,
-            # but we're going to truncate the bottom line if it's too long
-            framebuffer = ["", ""]
-            framebuffer[cursor_pos] = self.cursor_char + text[cursor_pos]
-            framebuffer[inactive_row] = " " + text[inactive_row][: self.max_width]
-            print(framebuffer)
-            self.lcd_queue.put([self.write_to_lcd, framebuffer])
-            return self
-
         # top line too long.. so animate until there's another input event
         ani_pos = 0
         while start_input_count == self.input_count:
