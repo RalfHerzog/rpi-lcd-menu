@@ -7,7 +7,7 @@ class BaseMenu:
         """
         Initialzie basic menu
         """
-        self.items = list()
+        self.items = []
         self.parent = parent
         self.current_option = 0
         self.selected_option = -1

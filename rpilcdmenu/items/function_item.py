@@ -17,15 +17,8 @@ class FunctionItem(MenuItem):
 
         self.function = function
 
-        if args is not None:
-            self.args = args
-        else:
-            self.args = []
-        if kwargs is not None:
-            self.kwargs = kwargs
-        else:
-            self.kwargs = {}
-
+        self.args = args if args is not None else []
+        self.kwargs = kwargs if kwargs is not None else {}
         self.returned_value = None
 
     def action(self):
