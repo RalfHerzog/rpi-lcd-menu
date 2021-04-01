@@ -77,7 +77,7 @@ class RpiLCDMenu(BaseMenu):
             if len(self.items) == 2:
                 text.append(self.items[1].text)
 
-        elif len(self.items) > 2:
+        else:
             text = [self.items[self.current_option].text]
             cursor_pos = 0
             if self.current_option + 1 < len(self.items):

@@ -9,7 +9,7 @@ class ContainerItem:
         :ivar RpiLCDMenu menu: The menu which this item belongs to
         """
 
-        self.items = list()
+        self.items = []
         self.text = text
         self.menu = menu
 

@@ -29,12 +29,10 @@ def get_scrolled_text(text, start_line=0, lines_required=2):
     :param int start_line: which number to start from
     :param int lines_required: how many lines are needed
     """
-    scrolled_text = ''
-
-    for line in range(start_line, start_line+lines_required):
-        scrolled_text += get_scrolled_line(text, line)
-
-    return scrolled_text
+    return ''.join(
+        get_scrolled_line(text, line)
+        for line in range(start_line, start_line + lines_required)
+    )
 
 
 def get_text_lines(text):
