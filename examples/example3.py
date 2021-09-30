@@ -3,6 +3,8 @@
 """
 multi level menu
 """
+import time
+
 from rpilcdmenu import *
 from rpilcdmenu.items import *
 
@@ -28,11 +30,39 @@ def main():
     menu.debug()
     print("----")
     # press first menu item and scroll down to third one
-    menu.processEnter().processDown().processDown()
+    menu = menu.processEnter()
+    time.sleep(1)
+    menu = menu.processDown()
+    time.sleep(1)
+    menu = menu.processDown()
+    time.sleep(1)
     # enter submenu, press Item 32, press Back button
-    menu.processEnter().processDown().processEnter().processDown().processEnter()
+    menu = menu.processEnter()
+    time.sleep(1)
+    menu = menu.processDown()
+    time.sleep(1)
+    menu = menu.processEnter()
+    time.sleep(1)
+    menu = menu.processDown()
+    time.sleep(1)
+    menu = menu.processEnter()
+    time.sleep(1)
     # press item4 back in the menu
-    menu.processDown().processEnter()
+    menu = menu.processDown()
+    time.sleep(1)
+    menu = menu.processEnter()
+    time.sleep(1)
+
+    # # Show input dialog for password
+    frame_buffer = ['Passwort:   ok-#', '']
+    for _ in range(5):
+        # menu.lcd_queue.put([menu._write_to_lcd, frame_buffer, False])
+        menu.write_to_lcd(frame_buffer)
+        frame_buffer[1] += '*'
+        time.sleep(.5)
+    menu.write_to_lcd(['    Accepted!  ', 'Returning ...'])
+    time.sleep(5)
+    menu.start()
 
 
 def fooFunction(item_index):

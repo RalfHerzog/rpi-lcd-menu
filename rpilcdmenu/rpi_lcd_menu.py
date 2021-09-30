@@ -15,15 +15,16 @@ class RpiLCDMenu(BaseMenu):
         False to disable this animation and simply truncate the extra
         characters.
         """
+        super().__init__()
+
         self.lcd_framerate = 0.05  # Interval to listen for input during menu scrolling
         self.cursor_char = ">"  # Character for menu selector
 
-        self.lcd = lcd.lcd
-        self.scrolling_menu = scrolling_menu
-        self.lcd_queue = lcd.lcd_queue
-        self.max_width = 15
+        self.lcd = lcd.rpi_lcd_processor.lcd
+        self.lcd_queue = lcd.rpi_lcd_processor.lcd_queue
 
-        super().__init__()
+        self.scrolling_menu = scrolling_menu
+        self.max_width = 15
 
     def custom_character(self, loc, char):
         """
@@ -36,7 +37,10 @@ class RpiLCDMenu(BaseMenu):
         self.lcd.create_char(loc, char)
         return self
 
-    def write_to_lcd(self, framebuffer, clear=False):
+    def write_to_lcd(self, frame_buffer, clear=False):
+        self.lcd_queue.put([self._write_to_lcd, frame_buffer, clear])
+
+    def _write_to_lcd(self, framebuffer, clear=False):
         """
         Method to write out the formatted framebuffer to the LCD.
         framebuffer: A list whose elements are the strings to be written to the LCD
@@ -55,7 +59,7 @@ class RpiLCDMenu(BaseMenu):
         clear: If false, will not clear the display first
         """
         if isinstance(text, list):
-            self.lcd_queue.put([self.write_to_lcd, text, clear])
+            self.lcd_queue.put([self._write_to_lcd, text, clear])
         else:
             self.lcd_queue.put([self.lcd.write_string, text])
             self.lcd_queue.put([self.lcd.home])
@@ -108,7 +112,7 @@ class RpiLCDMenu(BaseMenu):
         framebuffer[cursor_pos] = self.cursor_char + text[cursor_pos][: self.max_width]
         framebuffer[inactive_row] = " " + text[inactive_row][: self.max_width]
         print(framebuffer)
-        self.lcd_queue.put([self.write_to_lcd, framebuffer])
+        self.lcd_queue.put([self._write_to_lcd, framebuffer])
         return self
 
     def _menu_scroller(self, text, cursor_pos, start_input_count):
@@ -123,15 +127,15 @@ class RpiLCDMenu(BaseMenu):
         print("inactive_row: " + str(inactive_row))
         # top line too long.. so animate until there's another input event
         ani_pos = 0
-        while start_input_count == self.input_count:
+        while start_input_count == self.input_count and self.scrolling_menu:
             # Render partial menu text
-            ani_text = text[cursor_pos][ani_pos : ani_pos + self.max_width]
+            ani_text = text[cursor_pos][ani_pos: ani_pos + self.max_width]
             # Prepend cursor character in front of top menu item, pad bottom item
             framebuffer = ["", ""]
             framebuffer[cursor_pos] = self.cursor_char + ani_text[: self.max_width]
             framebuffer[inactive_row] = " " + text[inactive_row][: self.max_width]
             # Send the framebuffer to the LCD
-            self.write_to_lcd(framebuffer)
+            self._write_to_lcd(framebuffer)
             # Determine next animation state
             if ani_pos in (0, len(text[cursor_pos]) - self.max_width):
                 delay_frames = 25
