@@ -5,9 +5,8 @@ class RpiLCDSubMenu(RpiLCDMenu):
         """
         Initialize SubMenu
         """
-        self.lcd = base_menu.lcd
         self.scrolling_menu = scrolling_menu
-        self.lcd_queue = base_menu.lcd_queue
+        self.rpi_lcd_processor = base_menu.rpi_lcd_processor
         self.max_width = base_menu.max_width
         self.lcd_framerate = base_menu.lcd_framerate
         self.cursor_char = base_menu.cursor_char
